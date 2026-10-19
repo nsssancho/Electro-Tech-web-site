@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroTech - Zamonaviy Elektr Jihozlari</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js 3D Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            cyan: '#00f2fe',
+                            blue: '#4facfe',
+                            purple: '#7f00ff',
+                            neonPink: '#ff007f',
+                            dark: '#0a0d1a',
+                            cardBg: 'rgba(15, 23, 42, 0.75)'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Glowing & 3D Effect Styles */
+        body {
+            background-color: #060913;
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .neon-border {
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.4), inset 0 0 15px rgba(0, 242, 254, 0.2);
+            border: 1px solid rgba(0, 242, 254, 0.6);
+        }
+
+        .neon-border-pink {
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 15px rgba(255, 0, 127, 0.2);
+            border: 1px solid rgba(255, 0, 127, 0.6);
+        }
+
+        .neon-border-purple {
+            box-shadow: 0 0 15px rgba(127, 0, 255, 0.4), inset 0 0 15px rgba(127, 0, 255, 0.2);
+            border: 1px solid rgba(127, 0, 255, 0.6);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.8), 0 0 20px rgba(0, 242, 254, 0.5);
+        }
+
+        .neon-text-pink {
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.8), 0 0 20px rgba(255, 0, 127, 0.5);
+        }
+
+        /* 3D Interactive Cyber Button */
+        .btn-3d {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .btn-3d:hover {
+            transform: translateY(-5px) translateZ(20px) scale(1.02);
+        }
+
+        .btn-3d:active {
+            transform: translateY(2px) scale(0.98);
+        }
+
+        .glass-panel {
+            background: rgba(13, 19, 38, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Modal Blur */
+        .modal-blur {
+            backdrop-filter: blur(12px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #060913;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f2fe;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="selection:bg-brand-cyan selection:text-black">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <header class="fixed top-0 left-0 w-full z-40 glass-panel border-b border-cyan-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/50">
+                    <i class="fa-solid font-bold fa-bolt text-yellow-300"></i>
+                </div>
+                <span class="font-orbitron text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 tracking-wider">
+                    ELECTRO<span class="text-white">3D</span>
+                </span>
+            </div>
+
+            <!-- Quick Navigation / Stats -->
+            <nav class="hidden md:flex items-center gap-8 font-semibold text-lg">
+                <a href="#about" class="hover:text-brand-cyan transition-colors duration-200">Kompaniya</a>
+                <a href="#products" class="hover:text-brand-cyan transition-colors duration-200">Mahsulotlar</a>
+                <a href="#links-3d" class="hover:text-brand-cyan transition-colors duration-200">3D Resurslar</a>
+                <button onclick="openAdminModal()" class="flex items-center gap-2 px-4 py-2 rounded-full border border-yellow-500/50 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-all font-orbitron text-sm">
+                    <i class="fa-solid fa-user-shield"></i> Admin Panel
+                </button>
+            </nav>
+
+            <button onclick="openAdminModal()" class="md:hidden text-yellow-400 text-xl p-2">
+                <i class="fa-solid fa-lock"></i>
+            </button>
+        </div>
+    </header>
+
+    <section class="relative min-h-screen pt-28 pb-16 flex items-center justify-center px-4">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            <div class="space-y-6 text-center lg:text-left z-10">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border border-cyan-500/40 text-brand-cyan text-sm font-semibold tracking-wide uppercase">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    Sanoat va Uy uchun Innovatsion Jihozlar
+                </div>
+                <h1 class="text-4xl sm:text-6xl font-black font-orbitron leading-tight">
+                    Kelajak <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 neon-text">Energiya</span> Tizimlari
+                </h1>
+                <p class="text-gray-300 text-lg sm:text-xl font-normal max-w-xl">
+                    Biz eng ilg'or elektr uskunalar, transformatorlar, aqlli hisoblagichlar hamda xavfsiz energiya ta'minoti uskunalarini yetkazib beramiz.
+                </p>
+
+                <!-- Action Button Showcase -->
+                <div class="pt-4 flex flex-wrap gap-4 justify-center lg:justify-start">
+                    <a href="#links-3d" class="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-orbitron font-bold text-lg shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/70 transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-3">
+                        <i class="fa-solid fa-cubes text-xl"></i> 3D Tugmalarni ko'rish
+                    </a>
+                </div>
+            </div>
+
+            <!-- Interactive 3D Interactive Viewport Container -->
+            <div class="relative w-full h-[380px] sm:h-[480px] rounded-3xl glass-panel neon-border overflow-hidden flex items-center justify-center">
+                <div id="interactive-3d-box" class="w-full h-full cursor-grab"></div>
+                <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur border border-white/10 px-4 py-2 rounded-lg text-xs font-mono text-cyan-300 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer animate-bounce"></i> 3D Modelni sichqoncha bilan aylantiring
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="links-3d" class="py-20 relative z-10 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16 space-y-4">
+                <h2 class="text-3xl sm:text-5xl font-black font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">
+                    Interaktiv 3D Tugmalar
+                </h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                    Quyidagi tugmalar orqali korxona hujjatlari, video taqdimot va buyurtma berish tizimlariga o'tishingiz mumkin.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+
+                <!-- 3D Button 1: Korxona Resume'si -->
+                <a href="https://docs.google.com/document/d/1hvWe6INdEz-OuD_JtQvI9IdRM2akuftxDG1efcgtIAE/edit?usp=sharing" 
+                   target="_blank" 
+                   class="btn-3d group glass-panel neon-border p-8 rounded-2xl flex flex-col justify-between hover:bg-cyan-950/30 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/30 transition-all"></div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-400 text-3xl group-hover:scale-110 group-hover:rotate-6 transition-all">
+                            <i class="fa-solid fa-file-contract"></i>
+                        </div>
+                        <span class="text-xs font-orbitron text-cyan-400 tracking-widest border border-cyan-400/30 px-3 py-1 rounded-full bg-cyan-400/10">
+                            3D DOCUMENT
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold font-orbitron text-white mb-2 group-hover:text-cyan-300 transition-colors">
+                            Korxona Resume'si
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-6">
+                            Kompaniyamiz faoliyati, tajribasi, sertifikatlari va rasmiy xujjatlari bilan tanishing.
+                        </p>
+                    </div>
+                    <div class="flex items-center text-cyan-400 font-orbitron font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                        Hujjatni Ochish <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </div>
+                </a>
+
+                <!-- 3D Button 2: Buyurtma Berish -->
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfHIRJhpOQggdrX0HiqYVJenQan6BsnI72hX9f-pkN0CofSvA/viewform?usp=sharing&ouid=113953984737188425397" 
+                   target="_blank" 
+                   class="btn-3d group glass-panel neon-border-pink p-8 rounded-2xl flex flex-col justify-between hover:bg-pink-950/30 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-pink-500/10 rounded-full blur-2xl group-hover:bg-pink-500/30 transition-all"></div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-16 h-16 rounded-2xl bg-pink-500/20 border border-pink-400/50 flex items-center justify-center text-pink-400 text-3xl group-hover:scale-110 group-hover:-rotate-6 transition-all">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <span class="text-xs font-orbitron text-pink-400 tracking-widest border border-pink-400/30 px-3 py-1 rounded-full bg-pink-400/10">
+                            ONLINE FORM
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold font-orbitron text-white mb-2 group-hover:text-pink-300 transition-colors">
+                            Buyurtma Berish
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-6">
+                            Elektr jihozlari va uskunalariga tezkor va xavfsiz onlayn buyurtma shakli.
+                        </p>
+                    </div>
+                    <div class="flex items-center text-pink-400 font-orbitron font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                        Formani To'ldirish <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </div>
+                </a>
+
+                <!-- 3D Button 3: Video Lavha -->
+                <a href="https://docs.google.com/videos/d/1cgxPpeBqjA5yEB00kzRR_TkKxwdGtBEbwEiSBtYNQBQ/play?usp=sharing" 
+                   target="_blank" 
+                   class="btn-3d group glass-panel neon-border-purple p-8 rounded-2xl flex flex-col justify-between hover:bg-purple-950/30 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/30 transition-all"></div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-400/50 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 group-hover:rotate-6 transition-all">
+                            <i class="fa-solid fa-circle-play"></i>
+                        </div>
+                        <span class="text-xs font-orbitron text-purple-400 tracking-widest border border-purple-400/30 px-3 py-1 rounded-full bg-purple-400/10">
+                            VIDEO MEDIA
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold font-orbitron text-white mb-2 group-hover:text-purple-300 transition-colors">
+                            Video Lavha
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-6">
+                            Mahsulotlarimiz, zavodimiz va ish jarayonlarimiz haqida maxsus video lavhani tomosha qiling.
+                        </p>
+                    </div>
+                    <div class="flex items-center text-purple-400 font-orbitron font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                        Videoni Ko'rish <i class="fa-solid fa-play ml-2"></i>
+                    </div>
+                </a>
+
+                <!-- 3D Button 4: Buyurtmalar Jadvali (Protected Admin) -->
+                <button onclick="openAdminModal()" 
+                   class="btn-3d text-left group glass-panel border border-yellow-500/50 p-8 rounded-2xl flex flex-col justify-between hover:bg-yellow-950/20 transition-all duration-300 relative overflow-hidden shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                    <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-yellow-500/10 rounded-full blur-2xl group-hover:bg-yellow-500/30 transition-all"></div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-500/20 border border-yellow-400/50 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 group-hover:-rotate-6 transition-all">
+                            <i class="fa-solid fa-table-list"></i>
+                        </div>
+                        <span class="text-xs font-orbitron text-yellow-400 tracking-widest border border-yellow-400/30 px-3 py-1 rounded-full bg-yellow-400/10 flex items-center gap-1">
+                            <i class="fa-solid fa-lock text-[10px]"></i> ADMIN ONLY
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold font-orbitron text-white mb-2 group-hover:text-yellow-300 transition-colors">
+                            Buyurtmalar Jadvali
+                        </h3>
+                        <p class="text-gray-400 text-sm mb-6">
+                            Kelib tushgan barcha buyurtmalar jadvali (Faqat administrator uchun parol bilan).
+                        </p>
+                    </div>
+                    <div class="flex items-center text-yellow-400 font-orbitron font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                        Parolni Kiritish <i class="fa-solid fa-key ml-2"></i>
+                    </div>
+                </button>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="py-20 relative z-10 px-4 bg-slate-900/40 border-t border-b border-white/5">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl sm:text-4xl font-black font-orbitron text-white">
+                    Sifatli <span class="text-brand-cyan">Elektr Jihozlari</span>
+                </h2>
+                <p class="text-gray-400 mt-2">Eng xaridorgir va ishonchli uskunalarimiz katalogi</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Product Card 1 -->
+                <div class="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan-500/50 transition-all group">
+                    <div class="h-48 rounded-xl bg-gradient-to-br from-cyan-900/30 to-blue-900/30 flex items-center justify-center mb-6 relative overflow-hidden">
+                        <i class="fa-solid fa-microchip text-6xl text-cyan-400 group-hover:scale-125 transition-transform duration-500"></i>
+                    </div>
+                    <span class="text-xs text-cyan-400 font-orbitron uppercase">Aqlli Tizimlar</span>
+                    <h3 class="text-xl font-bold font-orbitron text-white mt-1 mb-2">Aqlli Elektr Hisoblagich</h3>
+                    <p class="text-gray-400 text-sm mb-4">Masofadan boshqariladigan, aniq ko'rsatkichli va avtomatlashtirilgan o'lchov uskunasi.</p>
+                    <div class="flex items-center justify-between pt-4 border-t border-white/10">
+                        <span class="text-xl font-bold font-orbitron text-cyan-300">1 250 000 UZS</span>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfHIRJhpOQggdrX0HiqYVJenQan6BsnI72hX9f-pkN0CofSvA/viewform?usp=sharing&ouid=113953984737188425397" target="_blank" class="px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 text-sm font-semibold hover:bg-cyan-500 hover:text-black transition-all">Buyurtma</a>
+                    </div>
+                </div>
+
+                <!-- Product Card 2 -->
+                <div class="glass-panel rounded-2xl p-6 border border-white/10 hover:border-pink-500/50 transition-all group">
+                    <div class="h-48 rounded-xl bg-gradient-to-br from-pink-900/30 to-purple-900/30 flex items-center justify-center mb-6 relative overflow-hidden">
+                        <i class="fa-solid fa-car-battery text-6xl text-pink-400 group-hover:scale-125 transition-transform duration-500"></i>
+                    </div>
+                    <span class="text-xs text-pink-400 font-orbitron uppercase">Sanoat Jihozi</span>
+                    <h3 class="text-xl font-bold font-orbitron text-white mt-1 mb-2">Yuqori Kuchlanish Stabilizatori</h3>
+                    <p class="text-gray-400 text-sm mb-4">Sanoat obyektlari va maishiy texnikalarni kuchlanish o'zgarishidan to'liq himoya qiluvchi blok.</p>
+                    <div class="flex items-center justify-between pt-4 border-t border-white/10">
+                        <span class="text-xl font-bold font-orbitron text-pink-300">4 800 000 UZS</span>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfHIRJhpOQggdrX0HiqYVJenQan6BsnI72hX9f-pkN0CofSvA/viewform?usp=sharing&ouid=113953984737188425397" target="_blank" class="px-4 py-2 rounded-lg bg-pink-500/20 border border-pink-500/50 text-pink-300 text-sm font-semibold hover:bg-pink-500 hover:text-black transition-all">Buyurtma</a>
+                    </div>
+                </div>
+
+                <!-- Product Card 3 -->
+                <div class="glass-panel rounded-2xl p-6 border border-white/10 hover:border-purple-500/50 transition-all group">
+                    <div class="h-48 rounded-xl bg-gradient-to-br from-purple-900/30 to-indigo-900/30 flex items-center justify-center mb-6 relative overflow-hidden">
+                        <i class="fa-solid fa-solar-panel text-6xl text-purple-400 group-hover:scale-125 transition-transform duration-500"></i>
+                    </div>
+                    <span class="text-xs text-purple-400 font-orbitron uppercase">Qayta Tiklanuvchi Energiya</span>
+                    <h3 class="text-xl font-bold font-orbitron text-white mt-1 mb-2">Gibrid Inverter Tizimi</h3>
+                    <p class="text-gray-400 text-sm mb-4">Quyosh panellari va tarmoq energiyasini moslashtiruvchi zamonaviy smart inverter.</p>
+                    <div class="flex items-center justify-between pt-4 border-t border-white/10">
+                        <span class="text-xl font-bold font-orbitron text-purple-300">8 900 000 UZS</span>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfHIRJhpOQggdrX0HiqYVJenQan6BsnI72hX9f-pkN0CofSvA/viewform?usp=sharing&ouid=113953984737188425397" target="_blank" class="px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/50 text-purple-300 text-sm font-semibold hover:bg-purple-500 hover:text-black transition-all">Buyurtma</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="adminModal" class="fixed inset-0 z-50 modal-blur bg-black/80 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="glass-panel border border-yellow-500/50 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-[0_0_30px_rgba(234,179,8,0.3)] relative">
+            
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-full bg-yellow-500/20 border border-yellow-400/50 flex items-center justify-center text-yellow-400 text-3xl mx-auto mb-3">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <h3 class="text-2xl font-bold font-orbitron text-white">Admin Tasdiqlash</h3>
+                <p class="text-gray-400 text-sm mt-1">Buyurtmalar jadvalini ko'rish uchun parolni kiriting</p>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-orbitron text-yellow-400 mb-1">ADMIN PAROLI</label>
+                    <div class="relative">
+                        <input type="password" id="adminPassword" placeholder="••••••••" required 
+                            class="w-full bg-black/60 border border-yellow-500/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-400 font-mono tracking-widest text-lg">
+                        <i class="fa-solid fa-lock absolute right-4 top-4 text-gray-500"></i>
+                    </div>
+                    <p id="errorMessage" class="text-red-400 text-xs mt-1 hidden flex items-center gap-1">
+                        <i class="fa-solid fa-circle-exclamation"></i> Noto'g'ri parol! Qayta urinib ko'ring.
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-orbitron font-bold text-base shadow-lg shadow-yellow-500/30 hover:shadow-yellow-500/50 transition-all duration-200">
+                    KIRISH VA JADVALNI OCHISH
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="glass-panel border-t border-white/10 py-8 relative z-10 text-center text-gray-400 text-sm">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-yellow-400"></i>
+                <span class="font-orbitron font-bold text-white">ELECTRO3D</span> &copy; 2026. Barcha huquqlar himoyalangan.
+            </div>
+            <div class="flex gap-4 text-lg">
+                <a href="https://docs.google.com/document/d/1hvWe6INdEz-OuD_JtQvI9IdRM2akuftxDG1efcgtIAE/edit?usp=sharing" target="_blank" class="hover:text-cyan-400"><i class="fa-solid fa-file-lines"></i></a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfHIRJhpOQggdrX0HiqYVJenQan6BsnI72hX9f-pkN0CofSvA/viewform?usp=sharing&ouid=113953984737188425397" target="_blank" class="hover:text-pink-400"><i class="fa-solid fa-cart-shopping"></i></a>
+                <a href="https://docs.google.com/videos/d/1cgxPpeBqjA5yEB00kzRR_TkKxwdGtBEbwEiSBtYNQBQ/play?usp=sharing" target="_blank" class="hover:text-purple-400"><i class="fa-solid fa-video"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ----------------------------------------------------
+        // ADMIN AUTHENTICATION LOGIC
+        // ----------------------------------------------------
+        const ADMIN_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1s7mSOPIPryZvQesUMvSI-j9pvfWeV8G7lgvEB0ZPqRY/edit?usp=sharing";
+
+        function openAdminModal() {
+            const modal = document.getElementById('adminModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+            document.getElementById('adminPassword').focus();
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById('adminModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.getElementById('errorMessage').classList.add('hidden');
+                document.getElementById('adminPassword').value = '';
+            }, 300);
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const passInput = document.getElementById('adminPassword').value;
+            const errorMsg = document.getElementById('errorMessage');
+
+            // Parol tekshiruvi: 123456
+            if (passInput === '123456') {
+                errorMsg.classList.add('hidden');
+                // Parol to'g'ri bo'lsa, jadval havolasini yangi oynada ochamiz
+                window.open(ADMIN_SPREADSHEET_URL, '_blank');
+                closeAdminModal();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        // ----------------------------------------------------
+        // THREE.JS 3D BACKGROUND PARTICLES
+        // ----------------------------------------------------
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgScene = new THREE.Scene();
+        const bgCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
+
+        bgRenderer.setSize(window.innerWidth, window.innerHeight);
+        bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Create Energy Particles
+        const particlesCount = 700;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorArray = new Float32Array(particlesCount * 3);
+
+        const colors = [
+            new THREE.Color('#00f2fe'),
+            new THREE.Color('#7f00ff'),
+            new THREE.Color('#ff007f')
+        ];
+
+        for(let i = 0; i < particlesCount * 3; i += 3) {
+            posArray[i] = (Math.random() - 0.5) * 15;
+            posArray[i+1] = (Math.random() - 0.5) * 15;
+            posArray[i+2] = (Math.random() - 0.5) * 15;
+
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            colorArray[i] = randomColor.r;
+            colorArray[i+1] = randomColor.g;
+            colorArray[i+2] = randomColor.b;
+        }
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.04,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        bgScene.add(particlesMesh);
+
+        bgCamera.position.z = 5;
+
+        // Mouse Parallax effect
+        let mouseX = 0;
+        let mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 0.5;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
+        });
+
+        // ----------------------------------------------------
+        // THREE.JS INTERACTIVE 3D ELECTRICAL APPARATUS MODEL
+        // ----------------------------------------------------
+        const container3d = document.getElementById('interactive-3d-box');
+        const mainScene = new THREE.Scene();
+        const mainCamera = new THREE.PerspectiveCamera(45, container3d.clientWidth / container3d.clientHeight, 0.1, 100);
+        const mainRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+        mainRenderer.setSize(container3d.clientWidth, container3d.clientHeight);
+        mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container3d.appendChild(mainRenderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        mainScene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0x00f2fe, 2, 20);
+        pointLight1.position.set(3, 4, 3);
+        mainScene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xff007f, 2, 20);
+        pointLight2.position.set(-3, -2, -2);
+        mainScene.add(pointLight2);
+
+        // Construct 3D Futuristic Transformer / Power Core Group
+        const coreGroup = new THREE.Group();
+
+        // Central Reactor Sphere
+        const sphereGeo = new THREE.IcosahedronGeometry(1.2, 2);
+        const sphereMat = new THREE.MeshStandardMaterial({
+            color: 0x0a192f,
+            wireframe: true,
+            emissive: 0x00f2fe,
+            emissiveIntensity: 0.4
+        });
+        const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+        coreGroup.add(sphereMesh);
+
+        // Inner Glowing Core
+        const innerGeo = new THREE.SphereGeometry(0.7, 16, 16);
+        const innerMat = new THREE.MeshBasicMaterial({ color: 0x00f2fe });
+        const innerCore = new THREE.Mesh(innerGeo, innerMat);
+        coreGroup.add(innerCore);
+
+        // Outer Metallic Rings (Transformer Coils)
+        const ringGeo = new THREE.TorusGeometry(1.8, 0.08, 16, 100);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0xff007f, metalness: 0.8, roughness: 0.2 });
+        
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        ring1.rotation.x = Math.PI / 3;
+        coreGroup.add(ring1);
+
+        const ring2 = new THREE.Mesh(ringGeo, ringMat);
+        ring2.rotation.y = Math.PI / 3;
+        coreGroup.add(ring2);
+
+        mainScene.add(coreGroup);
+        mainCamera.position.z = 6;
+
+        // Interactive Orbit Logic for 3D Core
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        container3d.addEventListener('mousedown', (e) => {
+            isDragging = true;
+        });
+
+        container3d.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.clientX - previousMousePosition.x,
+                    y: e.clientY - previousMousePosition.y
+                };
+
+                coreGroup.rotation.y += deltaMove.x * 0.01;
+                coreGroup.rotation.x += deltaMove.y * 0.01;
+            }
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        // Touch support for mobile devices
+        container3d.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+
+        container3d.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.touches[0].clientX - previousMousePosition.x,
+                    y: e.touches[0].clientY - previousMousePosition.y
+                };
+                coreGroup.rotation.y += deltaMove.x * 0.01;
+                coreGroup.rotation.x += deltaMove.y * 0.01;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        });
+
+        container3d.addEventListener('touchend', () => { isDragging = false; });
+
+        // ----------------------------------------------------
+        // ANIMATION LOOP
+        // ----------------------------------------------------
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate background particles
+            particlesMesh.rotation.y += 0.0008;
+            particlesMesh.rotation.x += 0.0004;
+
+            // Parallax camera move
+            bgCamera.position.x += (mouseX - bgCamera.position.x) * 0.05;
+            bgCamera.position.y += (-mouseY - bgCamera.position.y) * 0.05;
+
+            // Rotate 3D Core automatically if not dragging
+            if (!isDragging) {
+                coreGroup.rotation.y += 0.005;
+                ring1.rotation.z += 0.01;
+                ring2.rotation.z -= 0.01;
+            }
+
+            bgRenderer.render(bgScene, bgCamera);
+            mainRenderer.render(mainScene, mainCamera);
+        }
+
+        // Window Resize Listener
+        window.addEventListener('resize', () => {
+            // Background
+            bgCamera.aspect = window.innerWidth / window.innerHeight;
+            bgCamera.updateProjectionMatrix();
+            bgRenderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Container 3D Model
+            mainCamera.aspect = container3d.clientWidth / container3d.clientHeight;
+            mainCamera.updateProjectionMatrix();
+            mainRenderer.setSize(container3d.clientWidth, container3d.clientHeight);
+        });
+
+        // Start Animation on Window Load
+        window.onload = function() {
+            animate();
+        };
+    </script>
+</body>
+</html>
